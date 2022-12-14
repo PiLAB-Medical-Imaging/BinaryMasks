@@ -5,6 +5,8 @@ Created on Thu Mar 31 10:38:40 2022
 @author: DELINTE Nicolas
 """
 
+import numpy as np
+
 
 def fill(position: tuple, data, new_val: float):
 
@@ -182,20 +184,3 @@ def center_of_mass(mask):
     center = [np.average(indices) for indices in np.where(mask == 1)]
 
     return center
-
-
-if __name__ == '__main__':
-
-    import nibabel as nib
-    import numpy as np
-
-    img = nib.load("C:/Users/nicol/Downloads/sub-PAT01_brain_mask.nii.gz")
-    mask = img.get_fdata()
-
-    # Convex
-    mask = convex_mask(mask)
-
-    center = [np.average(indices) for indices in np.where(mask == 1)]
-
-    out = nib.Nifti1Image(mask, img.affine)
-    out.to_filename('C:/users/nicol/Desktop/temp_mask.nii.gz')
