@@ -5,6 +5,8 @@ Created on Thu Mar 31 10:38:40 2022
 @author: DELINTE Nicolas
 """
 
+import numpy as np
+
 
 def fill(position: tuple, data, new_val: float):
 
@@ -143,24 +145,42 @@ def closing3D(ROI, repeat: int = 1):
     return erode3D(dilate3D(ROI, repeat=repeat), repeat=repeat)
 
 
-if __name__ == '__main__':
+def remove_inclusions(mask):
 
-    import nibabel as nib
-    import numpy as np
+    from skimage.morphology import flood
 
-    img = nib.load(
-        "C:/Users/nicol/Documents/Doctorat/Data/Rescan/Processed/NT1_binary_mask.nii.gz")
-    mask = img.get_fdata()
-
-    from skimage.morphology import convex_hull_image, flood
-
-    # hull = convex_hull_image(mask)
-    # mask[hull] = 1
-
-    # # Remove inclusion
-    # mask_filled = fill((0, 0, 0), mask, 1)
+    mask = mask.copy()
     mask_filled = flood(mask, (0, 0, 0))
     mask = np.where(mask_filled == 0, 1, mask)
 
-    out = nib.Nifti1Image(mask, img.affine)
-    out.to_filename('C:/users/nicol/Desktop/temp_mask.nii.gz')
+    return mask
+
+
+def convex_mask(mask):
+
+    from skimage.morphology import flood
+
+    mask = mask.copy()
+    mask_filled = mask.copy()
+    for x in range(mask.shape[0]):
+        mask_filled[x, :, :] = flood(mask[x, :, :], (0, 0))
+    mask = np.where(mask_filled == 0, 1, mask)
+
+    mask_filled = mask.copy()
+    for y in range(mask.shape[1]):
+        mask_filled[:, y, :] = flood(mask[:, y, :], (0, 0))
+    mask = np.where(mask_filled == 0, 1, mask)
+
+    mask_filled = mask.copy()
+    for z in range(mask.shape[2]):
+        mask_filled[:, :, z] = flood(mask[:, :, z], (0, 0))
+    mask = np.where(mask_filled == 0, 1, mask)
+
+    return mask
+
+
+def center_of_mass(mask):
+
+    center = [np.average(indices) for indices in np.where(mask == 1)]
+
+    return center
