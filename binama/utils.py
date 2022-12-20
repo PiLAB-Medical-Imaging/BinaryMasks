@@ -181,6 +181,27 @@ def convex_mask(mask):
 
 def center_of_mass(mask):
 
-    center = [np.average(indices) for indices in np.where(mask == 1)]
+    center = tuple([np.average(indices) for indices in np.where(mask == 1)])
 
     return center
+
+
+def isolate_mass(mask, center):
+
+    from skimage.morphology import flood
+
+    center = tuple([int(point) for point in center])
+
+    mask = flood(mask, center)
+    mask_bis = np.zeros((mask.shape))
+    mask_bis[mask] = 1
+
+    return mask_bis
+
+
+def clean_mask(mask):
+
+    mask = convex_mask(mask)
+    mask = isolate_mass(mask, center_of_mass(mask))
+
+    return mask
