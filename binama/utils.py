@@ -201,7 +201,9 @@ def isolate_mass(mask, center):
 
 def clean_mask(mask):
 
+    mask = np.pad(mask, pad_width=1, mode='constant', constant_values=0)
     mask = convex_mask(mask)
     mask = isolate_mass(mask, center_of_mass(mask))
+    mask = mask[tuple(slice(1, dim - 1) for dim in mask.shape)]
 
     return mask
