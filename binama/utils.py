@@ -213,15 +213,11 @@ def isolate_mass(mask, center, strict: bool = False):
     center = tuple([int(point) for point in center])
 
     if strict:
-        elem = np.zeros((3,)*len(mask.shape))
-        cond = np.argwhere(elem == 0)
-        for idx in cond:
-            if np.count_nonzero(idx == 1) >= len(mask.shape)-1:
-                elem[tuple(idx)] = 1
-
-        mask = flood(mask, center, footprint=elem)
+        connectivity = 1
     else:
-        mask = flood(mask, center)
+        connectivity = None
+
+    mask = flood(mask, center, connectivity=connectivity)
     mask_bis = np.zeros((mask.shape))
     mask_bis[mask] = 1
 
@@ -257,25 +253,23 @@ def find_largest_volume(mask, strict: bool = False):
     idxList = []
 
     if strict:
-        elem = np.zeros((3,)*len(m.shape))
-        cond = np.argwhere(elem == 0)
-        for i in cond:
-            if np.count_nonzero(i == 1) >= len(m.shape)-1:
-                elem[tuple(i)] = 1
+        connectivity = 1
+    else:
+        connectivity = None
 
     while idx.shape[0] > 0:
 
-        if strict:
-            fm = flood(m, tuple(idx[0]), footprint=elem)
-        else:
-            fm = flood(m, tuple(idx[0]))
+        fm = flood(m, tuple(idx[0]), connectivity=connectivity)
         volList.append(np.sum(fm))
         idxList.append(tuple(idx[0]))
 
-        m -= fm
+        m[fm == 1] = 0
         idx = np.argwhere(m)
 
-    return flood(mask, idxList[volList.index(max(volList))])
+    out = flood(mask, idxList[volList.index(max(volList))],
+                connectivity=connectivity)
+
+    return out
 
 
 def fuse_masks(mask1, mask2):
