@@ -6,6 +6,7 @@ Created on Thu Mar 31 10:38:40 2022
 """
 
 import numpy as np
+from skimage.morphology import flood
 
 
 def fill(position: tuple, data, new_val: float):
@@ -43,7 +44,11 @@ def getVoxels(voxel, data, init_val, voxelList):
 
 def isInbound(voxel, data):
 
-    return voxel[0] < data.shape[0] and voxel[0] >= 0 and voxel[1] < data.shape[1] and voxel[1] >= 0 and voxel[2] < data.shape[2] and voxel[2] >= 0
+    cond = (voxel[0] < data.shape[0] and voxel[0] >= 0 and
+            voxel[1] < data.shape[1] and voxel[1] >= 0 and
+            voxel[2] < data.shape[2] and voxel[2] >= 0)
+
+    return cond
 
 
 def dilate3D(inputROI, repeat=1, square: bool = False):
@@ -98,7 +103,7 @@ def erode3D(inputROI, repeat=1):
 
     Parameters
     ----------
-    ROI : 3D binary mask    
+    ROI : 3D binary mask
     repeat : numbers of times the operation is repeated, default=1
 
     Returns
@@ -147,18 +152,16 @@ def closing3D(ROI, repeat: int = 1):
 
 def remove_inclusions(mask):
 
-    from skimage.morphology import flood
-
     mask = mask.copy()
-    mask_filled = flood(mask, (0, 0, 0))
+    mask = np.pad(mask, pad_width=1, mode='constant', constant_values=0)
+    mask_filled = flood(mask, (0,)*len(mask.shape))
     mask = np.where(mask_filled == 0, 1, mask)
+    mask = mask[tuple(slice(1, dim - 1) for dim in mask.shape)]
 
     return mask
 
 
 def convex_mask(mask):
-
-    from skimage.morphology import flood
 
     mask = mask.copy()
     mask_filled = mask.copy()
@@ -186,17 +189,135 @@ def center_of_mass(mask):
     return center
 
 
-def isolate_mass(mask, center):
+def isolate_mass(mask, center, strict: bool = False):
+    '''
+    Return the region of connected 1s at tne center point.
 
-    from skimage.morphology import flood
+    Parameters
+    ----------
+    mask : TYPE
+        DESCRIPTION.
+    center : TYPE
+        DESCRIPTION.
+    strict : bool, optional
+        If True, only direct contact is considered as a conenction.
+        The default is False.
+
+    Returns
+    -------
+    mask_bis : TYPE
+        DESCRIPTION.
+
+    '''
 
     center = tuple([int(point) for point in center])
 
-    mask = flood(mask, center)
+    if strict:
+        elem = np.zeros((3,)*len(mask.shape))
+        cond = np.argwhere(elem == 0)
+        for idx in cond:
+            if np.count_nonzero(idx == 1) >= len(mask.shape)-1:
+                elem[tuple(idx)] = 1
+
+        mask = flood(mask, center, footprint=elem)
+    else:
+        mask = flood(mask, center)
     mask_bis = np.zeros((mask.shape))
     mask_bis[mask] = 1
 
     return mask_bis
+
+
+def find_largest_volume(mask, strict: bool = False):
+    '''
+    Isolates the largest region of connected 1s in a mask. The number of regions
+    increases computation time. Pre-cleaning is advised (remove noise and small
+    regions).
+
+    Parameters
+    ----------
+    mask : TYPE
+        DESCRIPTION.
+    strict : bool, optional
+        If True, only direct contact is considered as a conenction.
+        The default is False.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    '''
+
+    idx = np.argwhere(mask)
+
+    m = mask.copy()
+
+    volList = []
+    idxList = []
+
+    if strict:
+        elem = np.zeros((3,)*len(m.shape))
+        cond = np.argwhere(elem == 0)
+        for i in cond:
+            if np.count_nonzero(i == 1) >= len(m.shape)-1:
+                elem[tuple(i)] = 1
+
+    while idx.shape[0] > 0:
+
+        if strict:
+            fm = flood(m, tuple(idx[0]), footprint=elem)
+        else:
+            fm = flood(m, tuple(idx[0]))
+        volList.append(np.sum(fm))
+        idxList.append(tuple(idx[0]))
+
+        m -= fm
+        idx = np.argwhere(m)
+
+    return flood(mask, idxList[volList.index(max(volList))])
+
+
+def fuse_masks(mask1, mask2):
+    '''
+    Generates a mask containing the overlapping regions of the two masks as well
+    as the connected pixels, in either mask.
+
+    Parameters
+    ----------
+    mask1 : TYPE
+        DESCRIPTION.
+    mask2 : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    fuse : TYPE
+        DESCRIPTION.
+
+    '''
+
+    mask = mask1+mask2
+
+    m = mask.copy()
+    fuse = np.zeros(mask.shape)
+
+    idx = np.argwhere(m == 2)
+
+    idxList = []
+
+    while idx.shape[0] > 0:
+
+        fm = flood(m, tuple(idx[0]), tolerance=1)
+        idxList.append(tuple(idx[0]))
+
+        m[fm == 1] = 0
+        idx = np.argwhere(m == 2)
+
+    for idx in idxList:
+        fuse += flood(mask, tuple(idx), tolerance=1)
+
+    return fuse
 
 
 def clean_mask(mask):
