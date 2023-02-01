@@ -320,11 +320,11 @@ def fuse_masks(mask1, mask2):
     return fuse
 
 
-def clean_mask(mask):
+def clean_mask(mask, strict: bool = False):
 
     mask = np.pad(mask, pad_width=1, mode='constant', constant_values=0)
     mask = convex_mask(mask)
-    mask = isolate_mass(mask, center_of_mass(mask))
+    mask = isolate_mass(mask, center_of_mass(mask), strict=strict)
     mask = mask[tuple(slice(1, dim - 1) for dim in mask.shape)]
 
     return mask
