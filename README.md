@@ -2,6 +2,9 @@
 
 Welcome to the Binary Masks Operations's Github repository! 
 
+[![PyPI](https://img.shields.io/pypi/v/pilab_binama?label=pypi%20package)](https://pypi.org/project/pilab_binama/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pilab_binama)](https://pypi.org/project/pilab_binama/)
+
 ## Description
 
 This package contains helpful functions enabling a faster clean up of binary masks and other functionalities.
