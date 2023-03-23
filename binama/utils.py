@@ -50,7 +50,31 @@ def isInbound(voxel, data):
 
     return cond
 
+def dilation(mask, repeat=1, element='cross'):
+'''
+TO IMPLEMENT
 
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.binary_dilation.html
+'''
+
+    n_dim = len(mask.shape)
+    # Create a structuring element based on the chosen element shape
+    if element == 'cross':
+        struct_element = np.zeros((3,)*n_dim)
+        for d in range(n_dim):
+            idc = tuple([slice(None) if d==i else 1 for i in range(n_dim)])
+            struct_element[idc] = 1
+
+    elif element == 'square':
+        struct_element = np.ones([3]*n_dim)
+
+    # Dilate the mask using the structuring element
+    dilated_mask = mask.copy()
+    for i in range(repeat):
+        dilated_mask = binary_dilation(dilated_mask, structure=struct_element)
+
+    return dilated_mask
+    
 def dilate3D(inputROI, repeat=1, square: bool = False):
     '''
 
