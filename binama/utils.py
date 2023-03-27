@@ -6,7 +6,9 @@ Created on Thu Mar 31 10:38:40 2022
 """
 
 import numpy as np
+from warnings import warn
 from skimage.morphology import flood
+from scipy.ndimage import binary_dilation, binary_erosion
 
 
 def fill(position: tuple, data, new_val: float):
@@ -50,38 +52,54 @@ def isInbound(voxel, data):
 
     return cond
 
-def dilation(mask, repeat=1, element='cross'):
-'''
-TO IMPLEMENT
 
-https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.binary_dilation.html
-'''
-
-    n_dim = len(mask.shape)
-    # Create a structuring element based on the chosen element shape
-    if element == 'cross':
-        struct_element = np.zeros((3,)*n_dim)
-        for d in range(n_dim):
-            idc = tuple([slice(None) if d==i else 1 for i in range(n_dim)])
-            struct_element[idc] = 1
-
-    elif element == 'square':
-        struct_element = np.ones([3]*n_dim)
-
-    # Dilate the mask using the structuring element
-    dilated_mask = mask.copy()
-    for i in range(repeat):
-        dilated_mask = binary_dilation(dilated_mask, structure=struct_element)
-
-    return dilated_mask
-    
-def dilate3D(inputROI, repeat=1, square: bool = False):
+def dilation(mask, repeat: int = 1, element: str = 'cross'):
     '''
-
+    Applies the 'dilation' morphological operation to a binary mask.
 
     Parameters
     ----------
-    ROI : 3D binary mask
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+    repeat : int, optional
+        Numbers of times the operation is repeated. The default is 1.
+    element : str, optional
+        Either 'cross' or 'square'. The default is 'cross'.
+
+    Returns
+    -------
+    3D array
+        3D array of size (x,y,z) containing a dilated binary mask.
+
+    '''
+
+    n_dim = len(mask.shape)
+    # Create a structuring element based on the chosen element shape
+    if element == 'cross':
+        struct_element = np.zeros((3,)*n_dim)
+        for d in range(n_dim):
+            idc = tuple([slice(None) if d == i else 1 for i in range(n_dim)])
+            struct_element[idc] = 1
+
+    elif element == 'square':
+        struct_element = np.ones([3]*n_dim)
+
+    # Dilate the mask using the structuring element
+    dilated_mask = mask.copy()
+    dilated_mask = binary_dilation(dilated_mask, structure=struct_element,
+                                   iterations=repeat)
+
+    return dilated_mask*1
+
+
+def dilate3D(inputROI, repeat=1, square: bool = False):
+    '''
+    Deprecated
+
+    Parameters
+    ----------
+    ROI : 3D array
+        3D array of size (x,y,z) containing a binary mask.
     repeat : numbers of times the operation is repeated, default=1
     square : bool
         If True then element becomes 3x3 square
@@ -91,6 +109,9 @@ def dilate3D(inputROI, repeat=1, square: bool = False):
     ROI : 3D binary mask dilated by a 3-wide cross kernel
 
     '''
+
+    warn('This function is deprecated, please use dilation() instead.',
+         DeprecationWarning, stacklevel=1)
 
     ROI = inputROI.copy()
 
@@ -121,13 +142,53 @@ def dilate3D(inputROI, repeat=1, square: bool = False):
     return ROI
 
 
-def erode3D(inputROI, repeat=1):
+def erosion(mask, repeat: int = 1, element: str = 'cross'):
     '''
-
+    Applies the 'erosion' morphological operation to a binary mask.
 
     Parameters
     ----------
-    ROI : 3D binary mask
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+    repeat : int, optional
+        Numbers of times the operation is repeated. The default is 1.
+    element : str, optional
+        Either 'cross' or 'square'. The default is 'cross'.
+
+    Returns
+    -------
+    3D array
+        3D array of size (x,y,z) containing an eroded binary mask.
+
+    '''
+
+    n_dim = len(mask.shape)
+    # Create a structuring element based on the chosen element shape
+    if element == 'cross':
+        struct_element = np.zeros((3,)*n_dim)
+        for d in range(n_dim):
+            idc = tuple([slice(None) if d == i else 1 for i in range(n_dim)])
+            struct_element[idc] = 1
+
+    elif element == 'square':
+        struct_element = np.ones([3]*n_dim)
+
+    # Dilate the mask using the structuring element
+    dilated_mask = mask.copy()
+    dilated_mask = binary_erosion(dilated_mask, structure=struct_element,
+                                  iterations=repeat)
+
+    return dilated_mask*1
+
+
+def erode3D(inputROI, repeat=1):
+    '''
+    Deprecated
+
+    Parameters
+    ----------
+    ROI : 3D array
+        3D array of size (x,y,z) containing a binary mask.
     repeat : numbers of times the operation is repeated, default=1
 
     Returns
@@ -135,6 +196,9 @@ def erode3D(inputROI, repeat=1):
     ROI : 3D binary mask eroded by a 3-wide cross kernel
 
     '''
+
+    warn('This function is deprecated, please use erosion() instead.',
+         DeprecationWarning, stacklevel=1)
 
     ROI = inputROI.copy()
 
@@ -191,6 +255,20 @@ def closing3D(ROI, repeat: int = 1):
 
 
 def remove_inclusions(mask):
+    '''
+
+
+    Parameters
+    ----------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+
+    Returns
+    -------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+
+    '''
 
     mask = mask.copy()
     mask = np.pad(mask, pad_width=1, mode='constant', constant_values=0)
@@ -202,6 +280,20 @@ def remove_inclusions(mask):
 
 
 def convex_mask(mask):
+    '''
+
+
+    Parameters
+    ----------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+
+    Returns
+    -------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+
+    '''
 
     mask = mask.copy()
     mask_filled = mask.copy()
@@ -223,6 +315,20 @@ def convex_mask(mask):
 
 
 def center_of_mass(mask):
+    '''
+
+
+    Parameters
+    ----------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+
+    Returns
+    -------
+    center : TYPE
+        DESCRIPTION.
+
+    '''
 
     center = tuple([np.average(indices) for indices in np.where(mask == 1)])
 
@@ -235,8 +341,8 @@ def isolate_mass(mask, center, strict: bool = False):
 
     Parameters
     ----------
-    mask : TYPE
-        DESCRIPTION.
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
     center : TYPE
         DESCRIPTION.
     strict : bool, optional
@@ -245,8 +351,8 @@ def isolate_mass(mask, center, strict: bool = False):
 
     Returns
     -------
-    mask_bis : TYPE
-        DESCRIPTION.
+    mask_bis : 3D array
+        3D array of size (x,y,z) containing a binary mask.
 
     '''
 
@@ -272,16 +378,16 @@ def find_largest_volume(mask, strict: bool = False):
 
     Parameters
     ----------
-    mask : TYPE
-        DESCRIPTION.
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
     strict : bool, optional
         If True, only direct contact is considered as a conenction.
         The default is False.
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    out : 3D array
+        3D array of size (x,y,z) containing a binary mask.
 
     '''
 
@@ -319,15 +425,15 @@ def fuse_masks(mask1, mask2):
 
     Parameters
     ----------
-    mask1 : TYPE
-        DESCRIPTION.
-    mask2 : TYPE
-        DESCRIPTION.
+    mask1 : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+    mask2 : 3D array
+        3D array of size (x,y,z) containing a binary mask.
 
     Returns
     -------
-    fuse : TYPE
-        DESCRIPTION.
+    fuse : 3D array
+        3D array of size (x,y,z) containing a binary mask.
 
     '''
 
@@ -355,6 +461,22 @@ def fuse_masks(mask1, mask2):
 
 
 def clean_mask(mask, strict: bool = False):
+    '''
+
+
+    Parameters
+    ----------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+    strict : bool, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    mask : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+
+    '''
 
     mask = np.pad(mask, pad_width=1, mode='constant', constant_values=0)
     mask = convex_mask(mask)
