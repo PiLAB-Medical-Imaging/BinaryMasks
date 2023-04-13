@@ -29,7 +29,7 @@ def fill(position: tuple, data, new_val: float):
     return data_new
 
 
-def getVoxels(voxel, data, init_val, voxelList):
+def getVoxels(voxel, data, init_val: int, voxelList: list):
 
     (x, y, z) = voxel
 
@@ -44,7 +44,23 @@ def getVoxels(voxel, data, init_val, voxelList):
     return voxelList
 
 
-def isInbound(voxel, data):
+def isInbound(voxel, data) -> bool:
+    '''
+    Returns True if voxel is inside data volume.
+
+    Parameters
+    ----------
+    voxel : TYPE
+        Voxel coordinates
+    data : TYPE
+        Data volume
+
+    Returns
+    -------
+    bool
+        Returns True if voxel is inside data volume.
+
+    '''
 
     cond = (voxel[0] < data.shape[0] and voxel[0] >= 0 and
             voxel[1] < data.shape[1] and voxel[1] >= 0 and
@@ -246,7 +262,11 @@ def opening3D(ROI, repeat: int = 1):
 
     '''
 
+    warn('This function is deprecated, please use opening() instead.',
+         DeprecationWarning, stacklevel=1)
+
     return dilate3D(erode3D(ROI, repeat=repeat), repeat=repeat)
+
 
 def opening(ROI, repeat: int = 1):
     '''
@@ -266,21 +286,40 @@ def opening(ROI, repeat: int = 1):
 
     '''
 
-    return dilate(erode(ROI, repeat=repeat), repeat=repeat)
+    return dilation(erosion(ROI, repeat=repeat), repeat=repeat)
 
 
 def closing3D(ROI, repeat: int = 1):
 
+    warn('This function is deprecated, please use closing() instead.',
+         DeprecationWarning, stacklevel=1)
+
     return erode3D(dilate3D(ROI, repeat=repeat), repeat=repeat)
 
-def closing(ROI, repeat: int = 1):
 
-    return erode(dilate(ROI, repeat=repeat), repeat=repeat)
+def closing(ROI, repeat: int = 1):
+    '''
+    Applies the closing morphological operation on a binary mask.
+
+    Parameters
+    ----------
+    ROI : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+    repeat : int, optional
+        Numbers of times the operation is repeated. The default is 1.
+
+    Returns
+    -------
+    ROI : 3D array
+        3D binary mask closed by a 3-wide cross kernel
+    '''
+
+    return erosion(dilation(ROI, repeat=repeat), repeat=repeat)
 
 
 def remove_inclusions(mask):
     '''
-
+    Removes inclusions in a binary mask.
 
     Parameters
     ----------
@@ -305,7 +344,7 @@ def remove_inclusions(mask):
 
 def convex_mask(mask):
     '''
-
+    Makes a mask convex.
 
     Parameters
     ----------
@@ -340,7 +379,7 @@ def convex_mask(mask):
 
 def center_of_mass(mask):
     '''
-
+    Returns center of mass coordinates.
 
     Parameters
     ----------
@@ -349,8 +388,8 @@ def center_of_mass(mask):
 
     Returns
     -------
-    center : TYPE
-        DESCRIPTION.
+    center : tuple
+        Center of mass coordinates.
 
     '''
 
@@ -359,7 +398,7 @@ def center_of_mass(mask):
     return center
 
 
-def isolate_mass(mask, center, strict: bool = False):
+def isolate_mass(mask, center: tuple, strict: bool = False):
     '''
     Return the region of connected 1s at tne center point.
 
@@ -367,8 +406,8 @@ def isolate_mass(mask, center, strict: bool = False):
     ----------
     mask : 3D array
         3D array of size (x,y,z) containing a binary mask.
-    center : TYPE
-        DESCRIPTION.
+    center : tuple
+        Center of mass coordinates.
     strict : bool, optional
         If True, only direct contact is considered as a conenction.
         The default is False.
@@ -486,7 +525,7 @@ def fuse_masks(mask1, mask2):
 
 def clean_mask(mask, strict: bool = False):
     '''
-
+    Makes a mask convex and removes small clusters.
 
     Parameters
     ----------
