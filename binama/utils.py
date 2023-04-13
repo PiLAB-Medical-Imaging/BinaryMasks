@@ -248,10 +248,34 @@ def opening3D(ROI, repeat: int = 1):
 
     return dilate3D(erode3D(ROI, repeat=repeat), repeat=repeat)
 
+def opening(ROI, repeat: int = 1):
+    '''
+    Applies the opening morphological operation on a binary mask.
+
+    Parameters
+    ----------
+    ROI : 3D array
+        3D array of size (x,y,z) containing a binary mask.
+    repeat : int, optional
+        Numbers of times the operation is repeated. The default is 1.
+
+    Returns
+    -------
+    ROI : 3D array
+        3D binary mask opened by a 3-wide cross kernel
+
+    '''
+
+    return dilate(erode(ROI, repeat=repeat), repeat=repeat)
+
 
 def closing3D(ROI, repeat: int = 1):
 
     return erode3D(dilate3D(ROI, repeat=repeat), repeat=repeat)
+
+def closing(ROI, repeat: int = 1):
+
+    return erode(dilate(ROI, repeat=repeat), repeat=repeat)
 
 
 def remove_inclusions(mask):
