@@ -9,6 +9,8 @@ import numpy as np
 from warnings import warn
 from skimage.morphology import flood
 from scipy.ndimage import binary_dilation, binary_erosion
+import nibabel as nib
+from nibabel.processing import resample_from_to
 
 
 def fill(position: tuple, data, new_val: float):
@@ -547,3 +549,53 @@ def clean_mask(mask, strict: bool = False):
     mask = mask[tuple(slice(1, dim - 1) for dim in mask.shape)]
 
     return mask
+
+
+def compute_overlap(mask1_path, mask2_path):
+    """
+    Compute overlap metrics between two binary NIfTI masks while
+    accounting for affine transformations.
+
+    Parameters
+    ----------
+    mask1_path : str
+        Path to the reference mask.
+    mask2_path : str
+        Path to the second mask.
+
+    Returns
+    -------
+    dict
+        Dictionary containing overlap metrics.
+    """
+
+    # Load images
+    img1 = nib.load(mask1_path)
+    img2 = nib.load(mask2_path)
+
+    # Resample mask2 into mask1 space if needed
+    if img1.shape != img2.shape or not np.allclose(img1.affine, img2.affine):
+        img2 = resample_from_to(img2, (img1.shape, img1.affine), order=0)
+
+    # Convert to binary masks
+    mask1 = img1.get_fdata() > 0
+    mask2 = img2.get_fdata() > 0
+
+    # Compute overlap
+    intersection = np.logical_and(mask1, mask2).sum()
+    union = np.logical_or(mask1, mask2).sum()
+
+    volume1 = mask1.sum()
+    volume2 = mask2.sum()
+
+    dice = (2 * intersection / (volume1 + volume2)
+            if (volume1 + volume2) > 0 else np.nan)
+
+    jaccard = (intersection / union if union > 0 else np.nan)
+
+    sensitivity = (intersection / volume1 if volume1 > 0 else np.nan)
+
+    precision = (intersection / volume2 if volume2 > 0 else np.nan)
+
+    return {"Dice": dice, "Jaccard": jaccard, "Sensitivity": sensitivity,
+            "Precision": precision}
