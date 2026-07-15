@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools","wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pilab-binama"
+authors = [
+    {name = "Nicolas Delinte", email = "nicolas.delinte@uclouvain.be"},
+]
+readme="README.md"
+description = "Implementation of Binama"
+keywords = ["mask"]
+license = "GPL-3.0-only"
+classifiers = ['Intended Audience :: Science/Research',
+                'Natural Language :: English',
+                'Programming Language :: Python',
+]
+dependencies = ['numpy',
+                'scipy',
+                'scikit-image',
+                'nibabel'
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "binama.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"] 
