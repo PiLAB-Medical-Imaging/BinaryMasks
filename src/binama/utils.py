@@ -602,7 +602,7 @@ def compute_overlap(mask1_path, mask2_path):
             "Precision": precision}
 
 
-def dilate_atlas_labels(atlas, brain_mask, dilation_width: float,
+def dilate_atlas_labels(atlas, brain_mask=None, dilation_width: float = 1,
                         min_label: int = 0):
     """
     Dilates cortical atlas labels to include nearby unlabeled voxels (0),
@@ -612,10 +612,10 @@ def dilate_atlas_labels(atlas, brain_mask, dilation_width: float,
     ----------
     atlas : np.ndarray (3D, int)
         Cortical atlas with integer labels (0 = unlabeled).
-    brain_mask : np.ndarray (3D, bool or int)
-        Binary mask of the brain (same shape as atlas).
-    dilation_width : float
-        Maximum dilation distance in voxels.
+    brain_mask : np.ndarray (3D, bool or int), optional
+        Binary mask of the brain (same shape as atlas). The default is one
+    dilation_width : float, optional
+        Maximum dilation distance in voxels. The default is None.
     min_label : int, optional
         Labels below this values are not dilated
 
@@ -627,7 +627,8 @@ def dilate_atlas_labels(atlas, brain_mask, dilation_width: float,
 
     # Mask unlabeled voxels inside the brain
     unlabeled = np.where(atlas <= min_label, 1, 0)
-    unlabeled *= brain_mask.astype('int32')
+    if brain_mask is not None:
+        unlabeled *= brain_mask.astype('int32')
 
     # Compute distance transform from labeled voxels
     # Also retrieve indices of nearest labeled voxel for each position
