@@ -11,6 +11,7 @@ from skimage.morphology import flood
 from scipy.ndimage import binary_dilation, binary_erosion
 import nibabel as nib
 from nibabel.processing import resample_from_to
+from scipy.ndimage import distance_transform_edt
 
 
 def fill(position: tuple, data, new_val: float):
@@ -599,3 +600,50 @@ def compute_overlap(mask1_path, mask2_path):
 
     return {"Dice": dice, "Jaccard": jaccard, "Sensitivity": sensitivity,
             "Precision": precision}
+
+
+def dilate_atlas_labels(atlas, brain_mask, dilation_width: float,
+                        min_label: int = 0):
+    """
+    Dilates cortical atlas labels to include nearby unlabeled voxels (0),
+    constrained by a brain mask.
+
+    Parameters
+    ----------
+    atlas : np.ndarray (3D, int)
+        Cortical atlas with integer labels (0 = unlabeled).
+    brain_mask : np.ndarray (3D, bool or int)
+        Binary mask of the brain (same shape as atlas).
+    dilation_width : float
+        Maximum dilation distance in voxels.
+    min_label : int, optional
+        Labels below this values are not dilated
+
+    Returns
+    -------
+    dilated_atlas : np.ndarray (3D, int)
+        Atlas with dilated labels.
+    """
+
+    # Mask unlabeled voxels inside the brain
+    unlabeled = np.where(atlas <= min_label, 1, 0)
+    unlabeled *= brain_mask.astype('int32')
+
+    # Compute distance transform from labeled voxels
+    # Also retrieve indices of nearest labeled voxel for each position
+    distances, nearest_idx = distance_transform_edt(unlabeled,
+                                                    return_indices=True)
+
+    # Copy atlas to output
+    dilated_atlas = atlas.copy()
+
+    # For unlabeled voxels within dilation_width, assign nearest label
+    within_dilation = unlabeled & (distances <= dilation_width)
+
+    # Map nearest labeled voxel indices back to atlas labels
+    coords = np.argwhere(within_dilation)
+    for x, y, z in coords:
+        nx, ny, nz = nearest_idx[:, x, y, z]
+        dilated_atlas[x, y, z] = atlas[nx, ny, nz]
+
+    return dilated_atlas
